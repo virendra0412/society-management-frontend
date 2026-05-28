@@ -96,7 +96,7 @@ export const pollsApi = {
   getAll:  (params = {}) => client.get("/polls", { params }).then(unwrap),
   create:  (payload)     => client.post("/polls", payload).then(unwrap),
   vote:    (id, optionId)=> client.post(`/polls/${id}/vote`, { optionId }).then(unwrap),
-  close:   (id)          => client.patch(`/polls/${id}/close`).then(unwrap),
+  closePoll: (id)        => client.patch(`/polls/${id}/close`).then(unwrap),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
