@@ -22,7 +22,7 @@ const ForgotPasswordView = ({ onBack }) => {
     setLoading(true);
     try {
       const res = await authExtrasApi.forgotPassword(email.trim().toLowerCase());
-      if (res.devOtp) setDevOtp(res.devOtp); // dev only — never shown in prod
+      if (res.data?.devOtp) setDevOtp(res.data.devOtp); // dev only — never shown in prod
       setStep(2);
       toast.info("OTP sent — check your email.");
     } catch (err) {

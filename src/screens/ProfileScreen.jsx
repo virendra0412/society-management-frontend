@@ -187,9 +187,9 @@ const AvatarSection = ({ user, onAvatarUpdate }) => {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: 24, paddingTop: 8 }}>
       <div style={{ position: "relative", marginBottom: 12 }}>
-        {user?.avatarUrl ? (
+        {user?.avatar ? (
           <img
-            src={user.avatarUrl}
+            src={user.avatar}
             alt="avatar"
             style={{
               width: 80, height: 80, borderRadius: "50%",
@@ -252,7 +252,7 @@ export const ProfileScreen = () => {
   };
 
   const handleAvatarUpdate = (data) => {
-    setProfile((p) => ({ ...p, avatarUrl: data.avatarUrl }));
+    setProfile((p) => ({ ...p, avatar: data.avatar }));
     refreshUser();
   };
 
