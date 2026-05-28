@@ -259,7 +259,15 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
     setSlotsError(null);
     setSelectedSlot(null);
     amenityApi.getAvailability(amenity._id, date)
-      .then((res) => setSlots(res.data?.slots || []))
+      .then((res) => {
+        // GAP-6 FIX: service now returns { isOpen, closedReason, slots[] }
+        if (!res.data?.isOpen) {
+          setSlotsError(res.data?.closedReason || "Amenity is closed on this day.");
+          setSlots([]);
+        } else {
+          setSlots(res.data?.slots || []);
+        }
+      })
       .catch((e) => setSlotsError(e.response?.data?.message || "Failed to load slots."))
       .finally(() => setSlotsLoading(false));
   }, [amenity, date]);

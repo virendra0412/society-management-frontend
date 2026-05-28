@@ -11,6 +11,25 @@ import {
 } from "../constants/theme";
 import { timeAgo } from "../utils/timeago";
 
+// ─── GAP-5 Helpers ────────────────────────────────────────────────────────────
+
+/**
+ * Returns human-readable time until OTP expires, or past-tense if already gone.
+ */
+const otpExpiryLabel = (expiresAt) => {
+  if (!expiresAt) return null;
+  const diff = new Date(expiresAt) - Date.now();
+  if (diff <= 0) return { label: "OTP expired", expired: true };
+  const mins = Math.floor(diff / 60000);
+  const hrs  = Math.floor(mins / 60);
+  if (hrs >= 24) return { label: `OTP valid ~${Math.floor(hrs / 24)}d`, expired: false };
+  if (hrs >= 1)  return { label: `OTP valid ~${hrs}h ${mins % 60}m`, expired: false };
+  return { label: `OTP valid ${mins}m`, expired: false };
+};
+
+/** Minimum expectedAt: 15 min from now, formatted for datetime-local input. */
+const minExpectedAt = () => new Date(Date.now() + 15 * 60 * 1000).toISOString().slice(0, 16);
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_LABELS = {
@@ -113,9 +132,12 @@ const CopyOTPButton = ({ otp }) => {
 };
 
 // ─── Visitor Card ─────────────────────────────────────────────────────────────
-const VisitorCard = ({ v, isAdmin, onApprove, onReject, onVerifyOTP, onMarkExit, busy }) => {
+const VisitorCard = ({ v, isAdmin, onApprove, onReject, onVerifyOTP, onMarkExit, onCancelInvite, busy }) => {
   const purposeIcon = VISITOR_PURPOSE_ICON[v.purpose] || "🚶";
   const isBusy = busy === v._id;
+
+  // GAP-5 FIX: compute OTP expiry label for invited visitors
+  const expiry = v.status === "invited" ? otpExpiryLabel(v.entryOTPExpires) : null;
 
   return (
     <Card>
@@ -156,6 +178,21 @@ const VisitorCard = ({ v, isAdmin, onApprove, onReject, onVerifyOTP, onMarkExit,
         <span>🕐 {timeAgo(v.createdAt)}</span>
       </div>
 
+      {/* GAP-5 FIX: OTP expiry banner for invited visitors */}
+      {expiry && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          background: expiry.expired ? "#FEF2F2" : "#EFF6FF",
+          border: `1px solid ${expiry.expired ? "#FCA5A5" : "#BFDBFE"}`,
+          borderRadius: 8, padding: "6px 10px", marginBottom: 10,
+          fontSize: 11, fontWeight: 600,
+          color: expiry.expired ? "#991B1B" : "#1E40AF",
+        }}>
+          <span>{expiry.expired ? "⏰" : "🔑"}</span>
+          <span>{expiry.label}</span>
+        </div>
+      )}
+
       {v.note && (
         <div style={{ fontSize: 12, color: C.gray700, fontStyle: "italic", marginBottom: 10 }}>
           "{v.note}"
@@ -175,11 +212,25 @@ const VisitorCard = ({ v, isAdmin, onApprove, onReject, onVerifyOTP, onMarkExit,
         </div>
       )}
 
+      {/* GAP-5 FIX: Resident can cancel their own pending invite */}
+      {!isAdmin && v.status === "invited" && (
+        <Btn
+          small variant="ghost"
+          onClick={() => onCancelInvite(v._id)}
+          loading={isBusy}
+          style={{ width: "100%", color: "#EF4444", borderColor: "#FCA5A5" }}
+        >
+          ✕ Cancel Invite
+        </Btn>
+      )}
+
       {/* Admin: verify OTP for invited visitors */}
       {isAdmin && v.status === "invited" && (
-        <Btn small onClick={() => onVerifyOTP(v)} loading={isBusy} style={{ width: "100%", background: C.blue, color: "#fff" }}>
-          🔑 Verify OTP & Grant Entry
-        </Btn>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn small onClick={() => onVerifyOTP(v)} loading={isBusy} style={{ flex: 1, background: C.blue, color: "#fff" }}>
+            🔑 Verify OTP & Grant Entry
+          </Btn>
+        </div>
       )}
 
       {/* Admin: approve/reject pending walk-ins */}
@@ -218,6 +269,16 @@ const CreateInviteModal = ({ open, onClose, onCreated }) => {
 
   const handleSubmit = async () => {
     if (!form.name.trim()) return toast.error("Visitor name is required.");
+
+    // GAP-5 FIX: validate expectedAt is at least 15 min in the future
+    if (form.expectedAt) {
+      const expected = new Date(form.expectedAt);
+      const minDate  = new Date(Date.now() + 15 * 60 * 1000);
+      if (isNaN(expected.getTime()) || expected < minDate) {
+        return toast.error("Expected arrival must be at least 15 minutes in the future.");
+      }
+    }
+
     setSubmitting(true);
     try {
       const payload = { ...form };
@@ -244,7 +305,7 @@ const CreateInviteModal = ({ open, onClose, onCreated }) => {
       <Select label="Purpose"        value={form.purpose}       onChange={f("purpose")}       options={VISIT_PURPOSES} />
       <Input label="Vehicle No. (optional)" value={form.vehicleNumber} onChange={f("vehicleNumber")} placeholder="GJ01AB1234" />
       <Input label="Note (optional)" value={form.note}          onChange={f("note")}          placeholder="Coming to help with shift" multiline />
-      <Input label="Expected arrival (optional)" value={form.expectedAt} onChange={f("expectedAt")} type="datetime-local" />
+      <Input label="Expected arrival (optional)" value={form.expectedAt} onChange={f("expectedAt")} type="datetime-local" min={minExpectedAt()} />
       <Btn onClick={handleSubmit} loading={submitting} style={{ width: "100%" }}>
         Generate OTP & Invite
       </Btn>
@@ -454,6 +515,20 @@ export const VisitorScreen = () => {
     }
   };
 
+  // GAP-5 FIX: Resident cancels their own pre-approved invite
+  const handleCancelInvite = async (id) => {
+    setBusy(id);
+    try {
+      const res = await visitorApi.cancelInvite(id);
+      patchVisitor(res.data.visitor);
+      toast.success("Invite cancelled. The visitor's OTP is now invalid.");
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Failed to cancel invite.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   // ── Filter tabs ───────────────────────────────────────────────────────────────
   const FILTERS = isAdmin
     ? ["all", "invited", "pending", "approved", "rejected", "exited"]
@@ -567,6 +642,7 @@ export const VisitorScreen = () => {
             onReject={handleReject}
             onVerifyOTP={(visitor) => setOtpTarget(visitor)}
             onMarkExit={handleMarkExit}
+            onCancelInvite={handleCancelInvite}
           />
         ))}
       </div>

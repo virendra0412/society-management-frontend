@@ -126,6 +126,10 @@ export const visitorApi = {
   approveWalkIn: (id) => client.patch(`/visitors/${id}/approve`).then(unwrap),
   rejectWalkIn:  (id) => client.patch(`/visitors/${id}/reject`).then(unwrap),
 
+  // GAP-5 FIX: Resident cancels a pre-approved invite before visitor arrives.
+  // Invalidates the OTP; sets status → "expired".
+  cancelInvite:  (id) => client.patch(`/visitors/${id}/cancel`).then(unwrap),
+
   // Admin / Security — log walk-in, verify OTP, mark exit
   logWalkIn:   (payload) => client.post("/visitors/walk-in", payload).then(unwrap),
   verifyOTP:   (id, otp) => client.post(`/visitors/${id}/verify-otp`, { otp }).then(unwrap),

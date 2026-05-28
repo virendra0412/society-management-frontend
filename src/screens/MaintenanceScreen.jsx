@@ -859,6 +859,147 @@ const MyPaymentsView = () => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ─── GAP-5 FIX: Collection Analytics Chart ────────────────────────────────────
+// Pure-SVG bar chart — no external charting library needed.
+// Shows collected (green) vs pending (amber) ₹ per bill, ordered by billMonth.
+// Rendered inside MaintenanceDashboard (admin only, published bills only).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const CollectionChart = ({ bills }) => {
+  // Only include published bills that have payment records
+  const data = bills
+    .filter((b) => b.isPublished && b.collectionSummary?.total > 0)
+    .map((b) => ({
+      label:     b.billMonth || b.title.slice(0, 8),
+      collected: b.collectionSummary?.collected || 0,
+      pending:   b.collectionSummary?.pending   || 0,
+      total:     b.collectionSummary?.total      || 0,
+    }))
+    .sort((a, b) => (a.label > b.label ? 1 : -1))
+    .slice(-6); // show last 6 bills max
+
+  if (data.length === 0) return null;
+
+  const W = 340, H = 160, PAD_L = 52, PAD_B = 28, PAD_T = 16, PAD_R = 12;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_B - PAD_T;
+
+  const maxVal = Math.max(...data.map((d) => d.total), 1);
+  const barGroupW = chartW / data.length;
+  const barW = Math.min(barGroupW * 0.38, 18);
+  const gap  = barW * 0.35;
+
+  const toY = (v) => PAD_T + chartH - (v / maxVal) * chartH;
+
+  // Y-axis labels — 4 ticks
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(maxVal * f));
+
+  const fmtK = (n) => (n >= 1000 ? `${(n / 1000).toFixed(0)}k` : String(n));
+
+  return (
+    <div style={{
+      background: "#fff", borderRadius: 14,
+      border: `1px solid ${C.gray100}`,
+      padding: "14px 14px 10px", marginBottom: 14,
+    }}>
+      <div style={{
+        display: "flex", justifyContent: "space-between",
+        alignItems: "center", marginBottom: 10,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.navy }}>
+          📊 Collection Analytics
+        </div>
+        <div style={{ display: "flex", gap: 12, fontSize: 10, color: C.gray500 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: C.green, display: "inline-block" }} />
+            Collected
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: C.amber, display: "inline-block" }} />
+            Pending
+          </span>
+        </div>
+      </div>
+
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        width="100%"
+        style={{ display: "block", overflow: "visible" }}
+      >
+        {/* Y-axis grid lines + labels */}
+        {ticks.map((v) => {
+          const y = toY(v);
+          return (
+            <g key={v}>
+              <line
+                x1={PAD_L} y1={y} x2={W - PAD_R} y2={y}
+                stroke={C.gray100} strokeWidth={1}
+                strokeDasharray={v === 0 ? "none" : "3 3"}
+              />
+              <text
+                x={PAD_L - 5} y={y + 4}
+                textAnchor="end" fontSize={8}
+                fill={C.gray400} fontFamily="Plus Jakarta Sans"
+              >
+                {fmtK(v)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Bars */}
+        {data.map((d, i) => {
+          const cx       = PAD_L + barGroupW * i + barGroupW / 2;
+          const xColl    = cx - barW - gap / 2;
+          const xPend    = cx + gap / 2;
+          const hColl    = (d.collected / maxVal) * chartH || 0;
+          const hPend    = (d.pending   / maxVal) * chartH || 0;
+          const yColl    = PAD_T + chartH - hColl;
+          const yPend    = PAD_T + chartH - hPend;
+          const labelY   = H - PAD_B + 14;
+
+          return (
+            <g key={d.label}>
+              {/* Collected bar */}
+              {hColl > 0 && (
+                <rect
+                  x={xColl} y={yColl}
+                  width={barW} height={hColl}
+                  rx={3} fill={C.green} opacity={0.85}
+                />
+              )}
+              {/* Pending bar */}
+              {hPend > 0 && (
+                <rect
+                  x={xPend} y={yPend}
+                  width={barW} height={hPend}
+                  rx={3} fill={C.amber} opacity={0.75}
+                />
+              )}
+              {/* X-axis label */}
+              <text
+                x={cx} y={labelY}
+                textAnchor="middle" fontSize={8}
+                fill={C.gray500} fontFamily="Plus Jakarta Sans"
+              >
+                {d.label.length > 7 ? d.label.slice(2) : d.label}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* X-axis baseline */}
+        <line
+          x1={PAD_L} y1={PAD_T + chartH}
+          x2={W - PAD_R} y2={PAD_T + chartH}
+          stroke={C.gray200} strokeWidth={1}
+        />
+      </svg>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ─── MAINTENANCE DASHBOARD (Admin list view) ──────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 const BILL_STATUS_FILTERS = ["All", "Draft", "Published", "Closed"];
@@ -965,6 +1106,9 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
             </div>
           </Card>
         )}
+
+        {/* GAP-5 FIX: Collection analytics chart (admin, published bills only) */}
+        {isAdmin && <CollectionChart bills={bills} />}
 
         {/* Admin controls: status filter + month filter + new bill */}
         {isAdmin && (
