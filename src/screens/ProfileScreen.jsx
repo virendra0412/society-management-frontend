@@ -70,7 +70,7 @@ const EditProfileModal = ({ open, onClose, user, onSave }) => {
     setSaving(true);
     try {
       const updated = await userApi.updateProfile(form);
-      onSave(updated.data.user);
+      await onSave(updated.data.user);
       toast.success("Profile updated!");
       onClose();
     } catch (e) {
@@ -246,14 +246,14 @@ export const ProfileScreen = () => {
 
   useEffect(() => { loadProfile(); }, []);
 
-  const handleProfileSave = (updatedUser) => {
+  const handleProfileSave = async (updatedUser) => {
     setProfile(updatedUser);
-    refreshUser();
+    await refreshUser();
   };
 
-  const handleAvatarUpdate = (data) => {
+  const handleAvatarUpdate = async (data) => {
     setProfile((p) => ({ ...p, avatar: data.avatar }));
-    refreshUser();
+    await refreshUser();
   };
 
   const handleFamilyDone = (familyMembers) => {

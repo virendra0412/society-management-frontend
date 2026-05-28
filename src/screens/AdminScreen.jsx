@@ -14,7 +14,7 @@ const PendingCard = ({ member, onApprove, onReject, busy }) => (
         <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{member.name}</div>
         <div style={{ fontSize: 12, color: C.gray500 }}>{member.email}</div>
         <div style={{ fontSize: 11, color: C.gray500, marginTop: 2 }}>
-          {[member.flat && `Flat ${member.flat}`, member.block && `Block ${member.block}`]
+          {[member.flat && `Flat ${member.flat}`, member.wing && member.wing]
             .filter(Boolean).join(" · ") || "No flat info"}{" "}
           · {timeAgo(member.createdAt)}
         </div>
