@@ -30,6 +30,8 @@ export const HelpScreen = () => {
   const [detailLoad,   setDetailLoad]   = useState(false);
   const [replyBody,    setReplyBody]    = useState("");
   const [replyLoading, setReplyLoading] = useState(false);
+  const [replyIsVendor, setReplyIsVendor] = useState(false);  // vendor contact toggle
+  const [replyVendorPhone, setReplyVendorPhone] = useState(""); // vendor phone
   const [upvoting,     setUpvoting]     = useState({});   // replyId → bool
   const [closing,      setClosing]      = useState(false);
 
@@ -79,11 +81,19 @@ export const HelpScreen = () => {
 
   const handleReply = async () => {
     if (!replyBody.trim() || !detailPost) return;
+    if (replyIsVendor && !replyVendorPhone.trim()) return toast.error("Enter a vendor phone number.");
     setReplyLoading(true);
     try {
-      const res = await helpApi.addReply(detailPost._id, { body: replyBody.trim() });
+      const payload = { body: replyBody.trim() };
+      if (replyIsVendor) {
+        payload.isVendorContact = true;
+        payload.vendorPhone = replyVendorPhone.trim();
+      }
+      const res = await helpApi.addReply(detailPost._id, payload);
       setDetailPost((p) => ({ ...p, replies: res.data.replies }));
       setReplyBody("");
+      setReplyIsVendor(false);
+      setReplyVendorPhone("");
       fetchPosts();
       toast.success("Reply posted.");
     } catch (e) {
@@ -98,9 +108,22 @@ export const HelpScreen = () => {
     setUpvoting((u) => ({ ...u, [replyId]: true }));
     try {
       await helpApi.upvoteReply(detailPost._id, replyId);
-      // Refresh to get updated counts
-      const res = await helpApi.getOne(detailPost._id);
-      setDetailPost(res.data?.post);
+      // Patch upvotes array locally — toggle current user in/out
+      setDetailPost((prev) => {
+        if (!prev) return prev;
+        const updatedReplies = prev.replies.map((r) => {
+          if (r._id !== replyId) return r;
+          const uid = user._id;
+          const alreadyVoted = r.upvotes?.some(
+            (id) => (id?._id || id)?.toString() === uid?.toString()
+          );
+          const newUpvotes = alreadyVoted
+            ? r.upvotes.filter((id) => (id?._id || id)?.toString() !== uid?.toString())
+            : [...(r.upvotes || []), uid];
+          return { ...r, upvotes: newUpvotes };
+        });
+        return { ...prev, replies: updatedReplies };
+      });
     } catch (e) {
       toast.error(e.response?.data?.message || "Failed.");
     } finally {
@@ -194,7 +217,7 @@ export const HelpScreen = () => {
       {/* ── Detail modal (all replies + upvote + close + vendor contact) ──── */}
       <Modal
         open={!!detailPost}
-        onClose={() => { setDetailPost(null); setReplyBody(""); }}
+        onClose={() => { setDetailPost(null); setReplyBody(""); setReplyIsVendor(false); setReplyVendorPhone(""); }}
         title="Help Post"
       >
         {detailPost && (
@@ -252,6 +275,9 @@ export const HelpScreen = () => {
             {!detailLoad && (detailPost.replies || []).map((r) => {
               const upvoteCount = r.upvotes?.length ?? 0;
               const isBusy      = !!upvoting[r._id];
+              const iVoted      = r.upvotes?.some(
+                (id) => (id?._id || id)?.toString() === user?._id?.toString()
+              );
               return (
                 <div key={r._id} style={{
                   background: C.gray50, borderRadius: 12,
@@ -268,18 +294,18 @@ export const HelpScreen = () => {
                         <div style={{ fontSize: 10, color: C.gray300 }}>{timeAgo(r.createdAt)}</div>
                       </div>
                     </div>
-                    {/* Upvote button */}
+                    {/* Upvote button — teal when current user has voted */}
                     <button
                       onClick={() => handleUpvote(r._id)}
                       disabled={isBusy}
                       style={{
                         display: "flex", alignItems: "center", gap: 4,
-                        background: upvoteCount > 0 ? C.teal + "15" : C.gray100,
-                        border: `1.5px solid ${upvoteCount > 0 ? C.teal : C.gray100}`,
+                        background: iVoted ? C.teal + "15" : C.gray100,
+                        border: `1.5px solid ${iVoted ? C.teal : C.gray100}`,
                         borderRadius: 8, padding: "4px 10px",
                         cursor: isBusy ? "default" : "pointer",
                         fontSize: 12, fontWeight: 700,
-                        color: upvoteCount > 0 ? C.teal : C.gray500,
+                        color: iVoted ? C.teal : C.gray500,
                         transition: "all 0.15s",
                       }}
                     >
@@ -310,19 +336,54 @@ export const HelpScreen = () => {
 
             {/* Reply input (only if post not closed) */}
             {!detailPost.isClosed && (
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                <input
-                  value={replyBody}
-                  onChange={(e) => setReplyBody(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleReply()}
-                  placeholder="Write a reply…"
+              <div style={{ marginTop: 4 }}>
+                {/* Vendor contact toggle */}
+                <button
+                  onClick={() => { setReplyIsVendor((v) => !v); setReplyVendorPhone(""); }}
                   style={{
-                    flex: 1, border: `1.5px solid ${C.gray100}`, borderRadius: 10,
-                    padding: "9px 12px", fontSize: 13, fontFamily: "Plus Jakarta Sans",
-                    color: C.text, outline: "none", background: C.gray50,
+                    display: "flex", alignItems: "center", gap: 6,
+                    background: replyIsVendor ? C.green + "15" : C.gray100,
+                    border: `1px solid ${replyIsVendor ? C.green + "40" : C.gray100}`,
+                    borderRadius: 8, padding: "5px 12px",
+                    fontSize: 11, fontWeight: 700,
+                    color: replyIsVendor ? C.green : C.gray500,
+                    cursor: "pointer", marginBottom: 8, transition: "all 0.15s",
                   }}
-                />
-                <Btn small loading={replyLoading} onClick={handleReply}>Reply</Btn>
+                >
+                  📞 {replyIsVendor ? "Vendor contact (on)" : "Add vendor contact?"}
+                </button>
+
+                {/* Vendor phone field — shown when toggle is on */}
+                {replyIsVendor && (
+                  <input
+                    value={replyVendorPhone}
+                    onChange={(e) => setReplyVendorPhone(e.target.value)}
+                    placeholder="Vendor phone number (e.g. 9876543210)"
+                    type="tel"
+                    style={{
+                      width: "100%", border: `1.5px solid ${C.green}40`, borderRadius: 10,
+                      padding: "9px 12px", fontSize: 13, fontFamily: "Plus Jakarta Sans",
+                      color: C.text, outline: "none", background: C.green + "08",
+                      boxSizing: "border-box", marginBottom: 8,
+                    }}
+                  />
+                )}
+
+                {/* Reply text + send */}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={replyBody}
+                    onChange={(e) => setReplyBody(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleReply()}
+                    placeholder={replyIsVendor ? "Describe this vendor…" : "Write a reply…"}
+                    style={{
+                      flex: 1, border: `1.5px solid ${C.gray100}`, borderRadius: 10,
+                      padding: "9px 12px", fontSize: 13, fontFamily: "Plus Jakarta Sans",
+                      color: C.text, outline: "none", background: C.gray50,
+                    }}
+                  />
+                  <Btn small loading={replyLoading} onClick={handleReply}>Reply</Btn>
+                </div>
               </div>
             )}
           </div>
@@ -570,16 +631,34 @@ export const ContactsScreen = () => {
     setSubmitting(true);
     try {
       if (editTarget) {
-        await contactsApi.update(editTarget._id, form);
+        const res = await contactsApi.update(editTarget._id, form);
+        // Patch updated contact directly in grouped state — no flicker refetch
+        const updated = res.data?.contact;
+        if (updated) {
+          setGrouped((prev) => {
+            const next = {};
+            Object.entries(prev).forEach(([grp, items]) => {
+              next[grp] = items.map((c) => c._id === updated._id ? updated : c);
+            });
+            // If group changed, rebuild fully via refetch
+            if (updated.group !== editTarget.group) {
+              fetchContacts();
+              return prev;
+            }
+            return next;
+          });
+        } else {
+          fetchContacts();
+        }
         toast.success("Contact updated.");
       } else {
         await contactsApi.create(form);
         toast.success("Contact added.");
+        fetchContacts();
       }
       setShowNew(false);
       setEditTarget(null);
       setForm({ name: "", phone: "", group: "Emergency", designation: "", icon: "📞" });
-      fetchContacts();
     } catch (e) {
       toast.error(e.response?.data?.message || "Failed to save contact.");
     } finally {
@@ -592,7 +671,15 @@ export const ContactsScreen = () => {
     setDelBusy((d) => ({ ...d, [contactId]: true }));
     try {
       await contactsApi.remove(contactId);
-      fetchContacts();
+      // Remove from local grouped state immediately — no refetch delay
+      setGrouped((prev) => {
+        const next = {};
+        Object.entries(prev).forEach(([grp, items]) => {
+          const filtered = items.filter((c) => c._id !== contactId);
+          if (filtered.length) next[grp] = filtered;
+        });
+        return next;
+      });
       toast.success("Contact deleted.");
     } catch (e) {
       toast.error(e.response?.data?.message || "Failed to delete contact.");
