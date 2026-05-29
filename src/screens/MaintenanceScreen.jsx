@@ -776,7 +776,13 @@ const MyPaymentsView = () => {
     setLoading(true); setError(null);
     try {
       const res = await maintenanceApi.getMyPayments();
-      setPayments(res.data?.payments || []);
+      const payments = res.data?.payments || [];
+      setPayments(
+        payments.map((item) => ({
+          ...item,
+          ...(item.payment || {}),
+        }))
+      );
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load your payment history.");
     } finally {

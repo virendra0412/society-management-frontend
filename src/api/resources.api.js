@@ -205,6 +205,7 @@ export const maintenanceApi = {
 
   // Resident — own payment history across all bills
   getMyPayments: (params = {}) => client.get("/maintenance/my-payments", { params }).then(unwrap),
+  getDefaulters: (params = {}) => client.get("/maintenance/defaulters", { params }).then(unwrap),
 
   // Admin — bill lifecycle
   createBill:  (payload)     => client.post("/maintenance", payload).then(unwrap),
