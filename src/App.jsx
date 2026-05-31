@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { ToastProvider } from "./context/ToastContext";
+import { ToastProvider }         from "./context/ToastContext";
 
 import { LoginScreen }    from "./screens/auth/LoginScreen";
 import { RegisterScreen } from "./screens/auth/RegisterScreen";
@@ -9,16 +9,17 @@ import { IssuesScreen }   from "./screens/IssuesScreen";
 import { ProfileScreen }  from "./screens/ProfileScreen";
 import { AdminScreen }    from "./screens/AdminScreen";
 import { HelpScreen, NoticesScreen, ContactsScreen, PollsScreen } from "./screens/ResourceScreens";
-import { VisitorScreen } from "./screens/VisitorScreen";
+import { VisitorScreen }     from "./screens/VisitorScreen";
 import { MaintenanceScreen } from "./screens/MaintenanceScreen";
-import { AmenityScreen } from "./screens/AmenityScreen";
-import { EventsScreen }  from "./screens/EventsScreen";
-import { ParkingScreen } from "./screens/ParkingScreen";
-import { BottomNav }     from "./components/layout/BottomNav";
-import { Spinner }        from "./components/ui";
-import { C }              from "./constants/theme";
+import { AmenityScreen }     from "./screens/AmenityScreen";
+import { EventsScreen }      from "./screens/EventsScreen";
+import { ParkingScreen }     from "./screens/ParkingScreen";
+import { BottomNav }         from "./components/layout/BottomNav";
+import { Spinner }            from "./components/ui";
+import { C }                  from "./constants/theme";
 
-// ─── Pending Approval Screen ──────────────────────────────────────────────────
+import { SAAuthProvider }    from "./context/SAAuthContext";
+import { SASuperAdminApp }   from "./screens/sa/SASuperAdminApp";
 const PendingApprovalScreen = ({ onLogout }) => (
   <div style={{
     minHeight: "100vh", display: "flex", flexDirection: "column",
@@ -52,13 +53,12 @@ const PendingApprovalScreen = ({ onLogout }) => (
   </div>
 );
 
-// ─── Auth Gate ────────────────────────────────────────────────────────────────
+// ─── Society Auth Gate (unchanged) ───────────────────────────────────────────
 const AuthGate = () => {
   const { isLogged, loading, isAdmin, user, logout } = useAuth();
-  const [authView, setAuthView] = useState("login"); // "login" | "register"
+  const [authView, setAuthView] = useState("login");
   const [tab,      setTab]      = useState("home");
 
-  // Splash while restoring session
   if (loading) {
     return (
       <div style={{
@@ -72,19 +72,16 @@ const AuthGate = () => {
     );
   }
 
-  // Not logged in — show auth screens
   if (!isLogged) {
     return authView === "login"
       ? <LoginScreen    onSwitch={() => setAuthView("register")} />
       : <RegisterScreen onSwitch={() => setAuthView("login")} />;
   }
 
-  // Logged in but not yet approved — show pending state
   if (!user?.isApproved && !isAdmin) {
     return <PendingApprovalScreen onLogout={logout} />;
   }
 
-  // Logged in — render app
   const navigateTo = (newTab) => setTab(newTab);
 
   return (
@@ -93,7 +90,6 @@ const AuthGate = () => {
       minHeight: "100vh", maxWidth: 480, margin: "0 auto",
       position: "relative", paddingBottom: 72,
     }}>
-      {/* Top right controls: profile + admin badge + logout */}
       <div style={{ position: "fixed", top: 10, right: 10, zIndex: 50, display: "flex", gap: 6 }}>
         {isAdmin && (
           <button
@@ -131,14 +127,13 @@ const AuthGate = () => {
         </button>
       </div>
 
-      {/* Active screen */}
       <div style={{ paddingTop: 8 }}>
         {tab === "home"        && <HomeScreen onNavigate={navigateTo} />}
         {tab === "issues"      && <IssuesScreen />}
         {tab === "visitors"    && <VisitorScreen />}
         {tab === "amenities"   && <AmenityScreen />}
-        {tab === "events"       && <EventsScreen />}
-        {tab === "parking"      && <ParkingScreen />}
+        {tab === "events"      && <EventsScreen />}
+        {tab === "parking"     && <ParkingScreen />}
         {tab === "maintenance" && <MaintenanceScreen />}
         {tab === "help"        && <HelpScreen />}
         {tab === "notices"     && <NoticesScreen />}
@@ -153,8 +148,22 @@ const AuthGate = () => {
   );
 };
 
-// ─── Root App ─────────────────────────────────────────────────────────────────
+// ─── Root — path-based portal fork ───────────────────────────────────────────
+const isSAPath = () =>
+  typeof window !== "undefined" &&
+  window.location.pathname.startsWith("/superadmin");
+
 export default function App() {
+  // Super Admin portal — completely isolated context tree
+  if (isSAPath()) {
+    return (
+      <SAAuthProvider>
+        <SASuperAdminApp />
+      </SAAuthProvider>
+    );
+  }
+
+  // Society App — unchanged
   return (
     <AuthProvider>
       <ToastProvider>

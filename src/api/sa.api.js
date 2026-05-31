@@ -1,0 +1,79 @@
+/**
+ * sa.api.js
+ * All 19 Super Admin API calls — grouped by domain.
+ *
+ * Every method uses saClient so tokens are completely isolated from society API.
+ */
+import saClient, { unwrapSA } from "./saClient";
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+export const saAuthApi = {
+  /** POST /superadmin/auth/login */
+  login:          (payload)  => saClient.post("/superadmin/auth/login",          payload).then(unwrapSA),
+
+  /** POST /superadmin/auth/refresh */
+  refresh:        (token)    => saClient.post("/superadmin/auth/refresh",         { refreshToken: token }).then(unwrapSA),
+
+  /** POST /superadmin/auth/logout */
+  logout:         ()         => saClient.post("/superadmin/auth/logout").then(unwrapSA),
+
+  /** GET /superadmin/auth/me */
+  me:             ()         => saClient.get("/superadmin/auth/me").then(unwrapSA),
+
+  /** PATCH /superadmin/auth/change-password */
+  changePassword: (payload)  => saClient.patch("/superadmin/auth/change-password", payload).then(unwrapSA),
+};
+
+// ─── Applications ─────────────────────────────────────────────────────────────
+export const saApplicationsApi = {
+  /**
+   * POST /superadmin/applications  — Public (no SA token required)
+   * Used by the public society-apply form.
+   */
+  apply:   (payload)      => saClient.post("/superadmin/applications", payload).then(unwrapSA),
+
+  /** GET /superadmin/applications?status=pending|approved|rejected */
+  getAll:  (params = {})  => saClient.get("/superadmin/applications",       { params }).then(unwrapSA),
+
+  /** GET /superadmin/applications/:id */
+  getOne:  (id)           => saClient.get(`/superadmin/applications/${id}`).then(unwrapSA),
+
+  /** PATCH /superadmin/applications/:id/approve — creates Society + admin User + trial subscription */
+  approve: (id)           => saClient.patch(`/superadmin/applications/${id}/approve`).then(unwrapSA),
+
+  /** PATCH /superadmin/applications/:id/reject */
+  reject:  (id, note)     => saClient.patch(`/superadmin/applications/${id}/reject`, { note }).then(unwrapSA),
+};
+
+// ─── Societies ────────────────────────────────────────────────────────────────
+export const saSocietiesApi = {
+  /** GET /superadmin/societies?plan=&status=&search= */
+  getAll:         (params = {}) => saClient.get("/superadmin/societies",                      { params }).then(unwrapSA),
+
+  /** GET /superadmin/societies/:id */
+  getOne:         (id)          => saClient.get(`/superadmin/societies/${id}`).then(unwrapSA),
+
+  /** PATCH /superadmin/societies/:id/subscription  { plan, status, trialEndsAt, subscriptionEndsAt } */
+  updateSub:      (id, payload) => saClient.patch(`/superadmin/societies/${id}/subscription`,       payload).then(unwrapSA),
+
+  /** PATCH /superadmin/societies/:id/suspend  { reason } */
+  suspend:        (id, reason)  => saClient.patch(`/superadmin/societies/${id}/suspend`,  { reason }).then(unwrapSA),
+
+  /** PATCH /superadmin/societies/:id/reactivate */
+  reactivate:     (id)          => saClient.patch(`/superadmin/societies/${id}/reactivate`).then(unwrapSA),
+
+  /** PATCH /superadmin/societies/:id/transfer-admin  { newAdminEmail } */
+  transferAdmin:  (id, payload) => saClient.patch(`/superadmin/societies/${id}/transfer-admin`,     payload).then(unwrapSA),
+
+  /** POST /superadmin/societies/:id/reset-admin-password */
+  resetAdminPass: (id)          => saClient.post(`/superadmin/societies/${id}/reset-admin-password`).then(unwrapSA),
+};
+
+// ─── Analytics ────────────────────────────────────────────────────────────────
+export const saAnalyticsApi = {
+  /** GET /superadmin/analytics/overview?period=7d|30d|90d */
+  overview:      (params = {}) => saClient.get("/superadmin/analytics/overview",          { params }).then(unwrapSA),
+
+  /** GET /superadmin/analytics/societies/:id */
+  societyDetail: (id)          => saClient.get(`/superadmin/analytics/societies/${id}`).then(unwrapSA),
+};
