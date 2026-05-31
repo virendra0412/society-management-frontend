@@ -15,12 +15,16 @@ import { AmenityScreen }     from "./screens/AmenityScreen";
 import { EventsScreen }      from "./screens/EventsScreen";
 import { ParkingScreen }     from "./screens/ParkingScreen";
 import { BottomNav }         from "./components/layout/BottomNav";
+import { LanguageSwitcher } from "./components/ui/LanguageSwitcher";
+import { useT } from "./context/LanguageContext";
 import { Spinner }            from "./components/ui";
 import { C }                  from "./constants/theme";
 
 import { SAAuthProvider }    from "./context/SAAuthContext";
 import { SASuperAdminApp }   from "./screens/sa/SASuperAdminApp";
-const PendingApprovalScreen = ({ onLogout }) => (
+const PendingApprovalScreen = ({ onLogout }) => {
+  const t = useT();
+  return (
   <div style={{
     minHeight: "100vh", display: "flex", flexDirection: "column",
     alignItems: "center", justifyContent: "center",
@@ -28,17 +32,17 @@ const PendingApprovalScreen = ({ onLogout }) => (
   }}>
     <div style={{ fontSize: 56, marginBottom: 20 }}>⏳</div>
     <div style={{ fontFamily: "Syne", fontSize: 22, fontWeight: 800, color: C.navy, marginBottom: 10 }}>
-      Awaiting Approval
+      {t("pending_title")}
     </div>
     <div style={{ fontSize: 14, color: C.gray500, lineHeight: 1.6, marginBottom: 32, maxWidth: 280 }}>
-      Your registration is under review. The society admin will approve your account shortly.
+      {t("pending_body")}
     </div>
     <div style={{
       background: C.amber + "15", border: `1px solid ${C.amber}30`,
       borderRadius: 12, padding: "12px 16px", marginBottom: 28,
       fontSize: 13, color: C.gray700, maxWidth: 300,
     }}>
-      💡 You'll be able to access all features once approved. Check back after a while.
+      {t("pending_tip")}
     </div>
     <button
       onClick={onLogout}
@@ -48,14 +52,15 @@ const PendingApprovalScreen = ({ onLogout }) => (
         cursor: "pointer", fontFamily: "Plus Jakarta Sans",
       }}
     >
-      Sign Out
+      {t("pending_sign_out")}
     </button>
   </div>
-);
+);};
 
 // ─── Society Auth Gate (unchanged) ───────────────────────────────────────────
 const AuthGate = () => {
   const { isLogged, loading, isAdmin, user, logout } = useAuth();
+  const t = useT();
   const [authView, setAuthView] = useState("login");
   const [tab,      setTab]      = useState("home");
 
@@ -91,6 +96,7 @@ const AuthGate = () => {
       position: "relative", paddingBottom: 72,
     }}>
       <div style={{ position: "fixed", top: 10, right: 10, zIndex: 50, display: "flex", gap: 6 }}>
+        <LanguageSwitcher />
         {isAdmin && (
           <button
             onClick={() => setTab("admin")}
@@ -101,7 +107,7 @@ const AuthGate = () => {
               fontSize: 11, fontWeight: 700, fontFamily: "Plus Jakarta Sans", cursor: "pointer",
             }}
           >
-            👑 Admin
+            👑 {t("btn_admin")}
           </button>
         )}
         <button
@@ -113,7 +119,7 @@ const AuthGate = () => {
             fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "Plus Jakarta Sans",
           }}
         >
-          👤 Profile
+          👤 {t("btn_profile")}
         </button>
         <button
           onClick={logout}
@@ -123,7 +129,7 @@ const AuthGate = () => {
             cursor: "pointer", fontFamily: "Plus Jakarta Sans",
           }}
         >
-          Sign out
+          {t("btn_sign_out")}
         </button>
       </div>
 

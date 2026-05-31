@@ -1,3 +1,24 @@
+/**
+ * constants/theme.js
+ *
+ * ── i18n Integration Notes ────────────────────────────────────────────────────
+ * NAV_ITEMS.label  →  English fallback string ONLY.
+ *   BottomNav reads it as: t(`nav_${item.id}`, item.label)
+ *   Translation keys are defined in src/i18n/{en,hi,gu}.js as nav_<id>.
+ *   To add a new locale (Tamil, Telugu, Marathi…) just add the nav_<id> key
+ *   to the new locale file — no change to theme.js needed.
+ *
+ * Sprint 3 (React Native prep):
+ *   Each NAV_ITEM carries an `icon` that works on both web (emoji) and RN
+ *   (react-native-vector-icons name stored in `rnIcon`). Add rnIcon when
+ *   migrating; the web app ignores unknown props.
+ *
+ * Sprint 4 (Voice-to-text):
+ *   Add a `voiceHint` key to CATEGORY labels so the speech recogniser knows
+ *   which intent maps to which category (e.g. "water leak" → "Water").
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 export const C = {
   bg:      "#F5F3EE",
   card:    "#FFFFFF",
@@ -15,6 +36,8 @@ export const C = {
   gray700: "#4A4540",
   text:    "#1A1714",
 };
+
+// ─── Issue / Help ─────────────────────────────────────────────────────────────
 
 export const STATUS_COLOR = {
   "Open":        { bg: "#FEF3C7", text: "#92400E", dot: "#F59E0B" },
@@ -73,45 +96,41 @@ export const PRIORITIES       = ["Low", "Medium", "High"];
 export const CONTACT_GROUPS   = ["Emergency", "Committee", "Vendor", "Other"];
 export const VISIT_PURPOSES   = ["Guest", "Delivery", "Cab", "Service", "Other"];
 
-export const VISITOR_STATUS_COLOR = {
-  invited:  { bg: "#DBEAFE", text: "#1E40AF", dot: "#3B82F6" },
-  pending:  { bg: "#FEF3C7", text: "#92400E", dot: "#F59E0B" },
-  approved: { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
-  rejected: { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444" },
-  exited:   { bg: "#F3F4F6", text: "#6B7280", dot: "#9CA3AF" },
-  expired:  { bg: "#F3F4F6", text: "#6B7280", dot: "#9CA3AF" },
-};
-
-export const VISITOR_PURPOSE_ICON = {
-  Guest:    "👤",
-  Delivery: "📦",
-  Cab:      "🚕",
-  Service:  "🔧",
-  Other:    "🚶",
-};
+// ─── Navigation ───────────────────────────────────────────────────────────────
+//
+// label  →  English fallback; BottomNav resolves the final text via
+//           t(`nav_${id}`, label) — the real translation lives in i18n/*.js.
+//
+// To add a new nav tab:
+//   1. Add the item below with a unique id.
+//   2. Add `nav_<id>` to all locale files (en/hi/gu/… .js).
+//   3. Handle the tab in App.jsx render block.
+//
+// Sprint 3 note: add `rnIcon: "home-outline"` when migrating to React Native.
 
 export const NAV_ITEMS = [
-  { id: "home",        label: "Home",       icon: "🏠" },
-  { id: "issues",      label: "Issues",     icon: "🔴" },
-  { id: "visitors",    label: "Visitors",   icon: "🚶" },
-  { id: "amenities",   label: "Amenities",  icon: "🏊" },
-  { id: "maintenance", label: "Payments",   icon: "💰" },
-  { id: "parking",     label: "Parking",    icon: "🚗" },
-  { id: "events",      label: "Events",     icon: "🎉" },
+  { id: "home",        label: "Home",        icon: "🏠" },
+  { id: "issues",      label: "Issues",      icon: "🔴" },
+  { id: "visitors",    label: "Visitors",    icon: "🚶" },
+  { id: "amenities",   label: "Amenities",   icon: "🏊" },
+  { id: "maintenance", label: "Payments",    icon: "💰" },
+  { id: "parking",     label: "Parking",     icon: "🚗" },
+  { id: "events",      label: "Events",      icon: "🎉" },
 ];
 
 export const NAV_ITEMS_ADMIN = [
-  { id: "home",        label: "Home",       icon: "🏠" },
-  { id: "issues",      label: "Issues",     icon: "🔴" },
-  { id: "visitors",    label: "Visitors",   icon: "🚶" },
-  { id: "amenities",   label: "Amenities",  icon: "🏊" },
-  { id: "maintenance", label: "Payments",   icon: "💰" },
-  { id: "parking",     label: "Parking",    icon: "🚗" },
-  { id: "events",      label: "Events",     icon: "🎉" },
-  { id: "admin",       label: "Approvals",  icon: "👑" },
+  { id: "home",        label: "Home",        icon: "🏠" },
+  { id: "issues",      label: "Issues",      icon: "🔴" },
+  { id: "visitors",    label: "Visitors",    icon: "🚶" },
+  { id: "amenities",   label: "Amenities",   icon: "🏊" },
+  { id: "maintenance", label: "Payments",    icon: "💰" },
+  { id: "parking",     label: "Parking",     icon: "🚗" },
+  { id: "events",      label: "Events",      icon: "🎉" },
+  { id: "admin",       label: "Approvals",   icon: "👑" },
 ];
 
 // ─── Maintenance / Payments ───────────────────────────────────────────────────
+
 export const PAYMENT_STATUS_COLOR = {
   unpaid:  { bg: "#FEF3C7", text: "#92400E", dot: "#F59E0B" },
   paid:    { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
@@ -129,6 +148,7 @@ export const BILL_STATUS = {
 export const PAYMENT_METHODS = ["cash", "upi", "neft", "cheque", "other"];
 
 // ─── Amenity Booking ──────────────────────────────────────────────────────────
+
 export const AMENITY_CATEGORIES = [
   "Clubhouse", "Swimming Pool", "Gym", "Tennis Court",
   "Badminton Court", "Party Hall", "Terrace", "Kids Play Area", "Other",
@@ -155,6 +175,7 @@ export const BOOKING_STATUS_COLOR = {
 };
 
 // ─── Events ───────────────────────────────────────────────────────────────────
+
 export const EVENT_CATEGORIES = [
   "Festival", "Meeting", "Sports", "Cultural",
   "Maintenance", "Emergency", "Other",
@@ -193,6 +214,7 @@ export const RSVP_LABEL = {
 };
 
 // ─── Parking ──────────────────────────────────────────────────────────────────
+
 export const SLOT_TYPES = ["2W", "4W", "EV", "Visitor", "Reserved"];
 
 export const SLOT_TYPE_ICON = {
@@ -222,4 +244,23 @@ export const REQUEST_STATUS_COLOR = {
   approved:  { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
   rejected:  { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444" },
   cancelled: { bg: "#F3F4F6", text: "#6B7280", dot: "#9CA3AF" },
+};
+
+// ─── Visitor ──────────────────────────────────────────────────────────────────
+
+export const VISITOR_STATUS_COLOR = {
+  invited:  { bg: "#DBEAFE", text: "#1E40AF", dot: "#3B82F6" },
+  pending:  { bg: "#FEF3C7", text: "#92400E", dot: "#F59E0B" },
+  approved: { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
+  rejected: { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444" },
+  exited:   { bg: "#F3F4F6", text: "#6B7280", dot: "#9CA3AF" },
+  expired:  { bg: "#F3F4F6", text: "#6B7280", dot: "#9CA3AF" },
+};
+
+export const VISITOR_PURPOSE_ICON = {
+  Guest:    "👤",
+  Delivery: "📦",
+  Cab:      "🚕",
+  Service:  "🔧",
+  Other:    "🚶",
 };

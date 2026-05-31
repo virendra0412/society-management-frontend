@@ -1,7 +1,9 @@
 import { C, NAV_ITEMS, NAV_ITEMS_ADMIN } from "../../constants/theme";
+import { useT } from "../../context/LanguageContext";
 
 export const BottomNav = ({ activeTab, onTabChange, isAdmin }) => {
   const items = isAdmin ? NAV_ITEMS_ADMIN : NAV_ITEMS;
+  const t = useT();
 
   return (
     <nav style={{
@@ -41,7 +43,7 @@ export const BottomNav = ({ activeTab, onTabChange, isAdmin }) => {
               fontFamily: "Plus Jakarta Sans",
               transition: "color 0.15s",
             }}>
-              {n.label}
+              {t(`nav_${n.id}`, n.label)}
             </span>
             {active && (
               <span style={{

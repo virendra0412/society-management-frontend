@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useT } from "../context/LanguageContext";
 import { issuesApi, helpApi, noticesApi } from "../api/resources.api";
 import { Card, Badge, Avatar, Spinner } from "../components/ui";
 import { C, STATUS_COLOR, CATEGORY_ICON, NOTICE_TAG_COLOR } from "../constants/theme";
@@ -52,6 +53,7 @@ const QuickAction = ({ icon, label, color, onClick }) => (
 
 export const HomeScreen = ({ onNavigate }) => {
   const { user, isAdmin } = useAuth();
+  const t = useT();
 
   const [issues,  setIssues]  = useState([]);
   const [help,    setHelp]    = useState([]);
@@ -82,11 +84,11 @@ export const HomeScreen = ({ onNavigate }) => {
 
   // Quick actions — resident set; admin gets an extra "Approvals" shortcut
   const quickActions = [
-    { icon: "🚨", label: "Report Issue",   color: C.red,    tab: "issues"   },
-    { icon: "🤝", label: "Ask for Help",   color: C.amber,  tab: "help"     },
-    { icon: "📢", label: "Notices",        color: C.teal,   tab: "notices"  },
-    { icon: "🗳️", label: "Polls",          color: C.purple, tab: "polls"    },
-    ...(isAdmin ? [{ icon: "👑", label: "Approvals", color: C.navy, tab: "admin" }] : []),
+    { icon: "🚨", label: t("home_report_issue"), color: C.red,    tab: "issues"   },
+    { icon: "🤝", label: t("home_ask_help"),     color: C.amber,  tab: "help"     },
+    { icon: "📢", label: t("nav_notices"),        color: C.teal,   tab: "notices"  },
+    { icon: "🗳️", label: t("nav_polls"),          color: C.purple, tab: "polls"    },
+    ...(isAdmin ? [{ icon: "👑", label: t("nav_admin"), color: C.navy, tab: "admin" }] : []),
   ];
 
   return (
@@ -109,9 +111,9 @@ export const HomeScreen = ({ onNavigate }) => {
         </div>
         {/* Clickable stat boxes */}
         <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
-          <StatBox icon="🔴" count={openCount}      label="Open Issues" loading={loading} onClick={() => onNavigate("issues")} />
-          <StatBox icon="📢" count={notices.length}  label="Notices"    loading={loading} onClick={() => onNavigate("notices")} />
-          <StatBox icon="🤝" count={help.length}     label="Help Posts" loading={loading} onClick={() => onNavigate("help")} />
+          <StatBox icon="🔴" count={openCount}      label={t("home_open_issues")} loading={loading} onClick={() => onNavigate("issues")} />
+          <StatBox icon="📢" count={notices.length}  label={t("home_notices")}    loading={loading} onClick={() => onNavigate("notices")} />
+          <StatBox icon="🤝" count={help.length}     label={t("home_help_posts")} loading={loading} onClick={() => onNavigate("help")} />
         </div>
       </div>
 
@@ -120,7 +122,7 @@ export const HomeScreen = ({ onNavigate }) => {
         {/* ── Quick Actions ─────────────────────────────────────────────── */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.gray700, marginBottom: 12 }}>
-            Quick Actions
+            {t("home_quick_actions")}
           </div>
           <div style={{ display: "flex", gap: 4, justifyContent: "space-between" }}>
             {quickActions.map((a) => (
@@ -150,7 +152,7 @@ export const HomeScreen = ({ onNavigate }) => {
             <span style={{ fontSize: 24 }}>📢</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: C.red, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>
-                Latest Notice
+                {t("home_latest_notice")}
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{urgentNotice.title}</div>
               <div style={{ fontSize: 12, color: C.gray500, marginTop: 2 }}>
@@ -164,14 +166,14 @@ export const HomeScreen = ({ onNavigate }) => {
         {/* Recent Issues */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.gray700, marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
-            <span>Recent Issues</span>
-            <span style={{ color: C.teal, cursor: "pointer" }} onClick={() => onNavigate("issues")}>See all →</span>
+            <span>{t("home_recent_issues")}</span>
+            <span style={{ color: C.teal, cursor: "pointer" }} onClick={() => onNavigate("issues")}>{t("home_see_all")}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {loading
               ? [1, 2, 3].map((k) => <div key={k} className="skeleton" style={{ height: 70, borderRadius: 14 }} />)
               : issues.length === 0
-                ? <div style={{ color: C.gray500, fontSize: 13, textAlign: "center", padding: "16px 0" }}>No issues yet.</div>
+                ? <div style={{ color: C.gray500, fontSize: 13, textAlign: "center", padding: "16px 0" }}>{t("home_no_issues")}</div>
                 : issues.map((issue) => (
                   <Card key={issue._id} onClick={() => onNavigate("issues")}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -195,14 +197,14 @@ export const HomeScreen = ({ onNavigate }) => {
         {/* Community Help */}
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.gray700, marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
-            <span>Community Help</span>
-            <span style={{ color: C.teal, cursor: "pointer" }} onClick={() => onNavigate("help")}>See all →</span>
+            <span>{t("home_community")}</span>
+            <span style={{ color: C.teal, cursor: "pointer" }} onClick={() => onNavigate("help")}>{t("home_see_all")}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {loading
               ? [1, 2].map((k) => <div key={k} className="skeleton" style={{ height: 64, borderRadius: 14 }} />)
               : help.length === 0
-                ? <div style={{ color: C.gray500, fontSize: 13, textAlign: "center", padding: "16px 0" }}>No help posts yet.</div>
+                ? <div style={{ color: C.gray500, fontSize: 13, textAlign: "center", padding: "16px 0" }}>{t("home_no_help")}</div>
                 : help.map((h) => (
                   <Card key={h._id} onClick={() => onNavigate("help")}>
                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
